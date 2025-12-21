@@ -174,7 +174,7 @@ def launch_chrome():
     except Exception as e:
         print(f"❌ Failed to launch Chrome: {e}")
 
-if __name__ == "__main__":
+def init_listener():
     try:
         if not is_chrome_debug_running():
             launch_chrome()
