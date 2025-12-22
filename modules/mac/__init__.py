@@ -3,6 +3,9 @@ import subprocess
 from loguru import logger
 from pynput import keyboard
 
+from modules.common import HotkeyCombination
+
+
 def focus_chrome_tab_and_element(title='qwen', css_selector='#chat-input'):
     script = f'''
     tell application "Google Chrome"
@@ -45,9 +48,8 @@ def focus_chrome_tab_and_element(title='qwen', css_selector='#chat-input'):
         logger.error(e.stderr.strip())
 
 
-def init_listener():
-    # Use a safe, non-system hotkey: Cmd + Shift + Z
-    hotkey_combination = '<alt>+<space>'
+def init_listener(hotkey_combination: HotkeyCombination):
+    hotkey_combination = hotkey_combination.mac
     hotkey = keyboard.HotKey(
         keyboard.HotKey.parse(hotkey_combination),
         focus_chrome_tab_and_element
