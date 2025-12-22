@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "click>=8.3.1",
     "ipdb>=0.13.13",
     "keyboard>=0.13.5",
     "loguru>=0.7.3",
@@ -13,6 +14,7 @@ dependencies = [
     "pynput>=1.8.1",
     "pystray>=0.19.5",
     "pywinauto>=0.6.9",
+    "pyyaml>=6.0.3",
     "selenium>=4.39.0",
 ]
 
