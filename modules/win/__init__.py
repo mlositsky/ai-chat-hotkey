@@ -107,22 +107,26 @@ class Listener:
         except Exception as e:
             raise e
         if not chat_tab:
-            logger.error(f"❌ {self.chat_title} Chat tab not found!")
-            return
+            logger.info(f"💬 {self.chat_title} tab not found. Opening a new one...")
+            self.driver.execute_script(f"window.open('{self.target_url}', '_blank');")
+            sleep(2)  # Allow time for the new tab to load
+
+            # Refresh window handles and find the new tab
+            new_handles = self.driver.window_handles
+            for handle in new_handles:
+                if handle not in handles:  # This is the newly opened tab
+                    self.driver.switch_to.window(handle)
+                    chat_tab = handle
+                    logger.info(f"✅ Opened and switched to new {self.chat_title} tab")
+                    break
 
         self.driver.switch_to.window(chat_tab)
 
         # Focus Chrome window
         try:
-            logger.debug(f"✅ init webd  {datetime.datetime.now() - start_}")
-
-            logger.debug(f"✅ done {datetime.datetime.now() - start_}")
-
             window = self.app.top_window()
-            logger.debug(f"✅ done {datetime.datetime.now() - start_}")
-
             window.set_focus()
-            logger.debug(f"✅ done {datetime.datetime.now() - start_}")
+            logger.debug(f"✅ Focused")
         except Exception as e:
             logger.error(f"⚠️ Could not focus window: {e}")
 
@@ -146,8 +150,7 @@ class Listener:
 
             if input_el:
                 self.driver.execute_script("arguments[0].focus();", input_el)
-                end_ = datetime.datetime.now()
-                logger.info(f"✅ Focused on {self.chat_title} input field! {end_ - start_}")
+                logger.info(f"✅ Focused on {self.chat_title} input field!")
             else:
                 exit(1)
         except Exception as e:
