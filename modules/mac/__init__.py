@@ -64,5 +64,4 @@ def init_listener(hotkey_combination: HotkeyCombination):
         try:
             l.join()
         except KeyboardInterrupt:
-            logger.info("\n🛑 Exiting...")
-
+            logger.info("🛑 Exiting...")
