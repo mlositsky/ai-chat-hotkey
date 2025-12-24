@@ -8,7 +8,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions
-from pywinauto import Application
+from pywinauto import Application, Desktop
 import keyboard
 import os
 import subprocess
@@ -18,17 +18,18 @@ from loguru import logger
 from modules.common import HotkeyCombination
 
 CHROME_PATH = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
-USER_DATA_DIR = r"C:\temp\ai-chat-hotkey"
-DEBUG_PORT = 9222
 
 class Listener:
-    def __init__(self, chat_title: str, target_url: str, input_field_selector: str, hotkey_combination: str):
+    def __init__(self, chat_title: str, target_url: str, input_field_selector: str, hotkey_combination: str, debug_port: int):
         self.hotkey_combination = HotkeyCombination(hotkey_combination)
         self.target_url = target_url
         self.input_field_selector = input_field_selector
         self.chat_title =chat_title
         self.app = None
         self.driver = None
+        self.user_data_dir = f"C:\\temp\\{chat_title}"
+        self.debug_port = debug_port
+
         self.init_listener()
 
     def init_listener(self):
@@ -51,45 +52,49 @@ class Listener:
         input("Press ENTER to exit...")
         exit(0)
 
-    @staticmethod
-    def is_port_open(host='127.0.0.1', port=9222, timeout=3):
+    def is_port_open(self, host='127.0.0.1', timeout=3):
         """Check if Chrome remote debugging port is open"""
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.settimeout(timeout)
-            return s.connect_ex((host, port)) == 0
+            return s.connect_ex((host, self.debug_port)) == 0
 
     def init_chrome(self,):
         # Check if Chrome debug port is open
         if not self.is_port_open():
-            logger.error("❌ Chrome is not running with --remote-debugging-port=9222")
+            logger.error(f"❌ Chrome is not running with --remote-debugging-port={self.debug_port}")
             raise
 
         chrome_options = Options()
-        chrome_options.add_experimental_option("debuggerAddress", "127.0.0.1:9222")
+        chrome_options.add_experimental_option("debuggerAddress", f"127.0.0.1:{self.debug_port}")
 
         logger.info("Connecting to Chrome...")
         try:
             driver = webdriver.Chrome(options=chrome_options)
         except Exception as e:
             logger.error(f"Failed to connect to Chrome: {e}")
-            logger.error("Make sure ONLY ONE Chrome instance is using port 9222")
+            logger.error(f"Make sure ONLY ONE Chrome instance is using port {self.debug_port}")
             return
-        app = Application(backend="uia").connect(
-            title_re=f".*Chrome",
-            timeout=10
-        )
-        self.app = app
+        desktop = Desktop(backend="uia")
+
+        for w in desktop.windows():
+            logger.debug(f"Check if '{self.chat_title}' in '{w.window_text()}'")
+            if self.chat_title in w.window_text().lower():
+                self.app = Application(backend="uia").connect(
+                    process=w.process_id(),
+                    timeout=10
+                )
+                logger.info(f"Window set to '{w.window_text()}' pid: {w.process_id()}")
+                break
         self.driver = driver
         return
 
     def focus_chrome_and_chat(self):
 
         logger.info(f"Connected! Searching for {self.chat_title} Chat tab...")
-        start_ = None
         chat_tab = None
         try:
             handles=self.driver.window_handles
-        except selenium.common.exceptions.InvalidSessionIdException:
+        except selenium.common.exceptions.InvalidSessionIdException: # noqa
             self.launch_chrome()
             sleep(6)
             self.init_chrome()
@@ -172,8 +177,7 @@ class Listener:
         keyboard.wait()  # Blocks until Ctrl+C or exit
 
 
-    @staticmethod
-    def is_chrome_debug_running():
+    def is_chrome_debug_running(self):
         """Check if Chrome is already running with matching debug port and user-data-dir"""
         for proc in psutil.process_iter(['pid', 'cmdline']):
             try:
@@ -182,7 +186,7 @@ class Listener:
                     continue
 
                 # Check for required flags
-                if f'--remote-debugging-port={DEBUG_PORT}' in cmdline and f'--user-data-dir={USER_DATA_DIR}' in cmdline:
+                if f'--remote-debugging-port={self.debug_port}' in cmdline and f'--user-data-dir={self.user_data_dir}' in cmdline:
                     return True
             except (psutil.NoSuchProcess, psutil.AccessDenied):
                 continue
@@ -192,13 +196,13 @@ class Listener:
     def launch_chrome(self):
         cmd = [
             CHROME_PATH,
-            f"--remote-debugging-port={DEBUG_PORT}",
-            f"--user-data-dir={USER_DATA_DIR}",
+            f"--remote-debugging-port={self.debug_port}",
+            f"--user-data-dir={self.user_data_dir}",
             self.target_url
         ]
 
         # Ensure the user data dir exists
-        os.makedirs(USER_DATA_DIR, exist_ok=True)
+        os.makedirs(self.user_data_dir, exist_ok=True)
 
         logger.info("Launching Chrome for AI Chat with remote debugging...")
         try:

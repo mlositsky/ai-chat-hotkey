@@ -68,6 +68,7 @@ def make_command(site_config: dict):
             chat_title=site_config['chat-title'],
             target_url=site_config['target-url'],
             input_field_selector=site_config['input-field-selector'],
+            debug_port=site_config['debug-port'],
         )
 
     return _cmd

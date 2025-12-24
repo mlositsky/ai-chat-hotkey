@@ -3,11 +3,14 @@ websites:
     target-url: "https://chat.qwen.ai"
     input-field-selector: "#chat-input"
     hotkey-combination: ctrl+shift+1
+    debug-port: 9222
   - chat-title: "perplexity"
     target-url: "https://perplexity.ai"
     input-field-selector: "#ask-input > p"
     hotkey-combination: ctrl+shift+2
+    debug-port: 9223
   - chat-title: "chatgpt"
     target-url: "https://chatgpt.com"
     input-field-selector: "#prompt-textarea > p"
     hotkey-combination: ctrl+shift+3
+    debug-port: 9224
